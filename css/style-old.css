@@ -1,0 +1,92 @@
+/* 네비게이션 바 */
+.site-header {
+  width: 100%;
+  background-color: #ffffff;  /* 배경을 흰색으로 */
+  color: rgb(143, 128, 128);               /* 글씨 색상 */
+  position: sticky;           /* 스크롤 시 상단 고정 */
+  top: 0;
+  z-index: 10;
+  padding: 20px 0;            /* 네비바 안의 패딩 조정 */
+  height: 80px;               /* 네비게이션 바의 고정 높이 설정 */
+}
+
+/* 네비게이션 바 안의 로고 */
+.logo a {
+  font-size: 48px;            /* 로고 글씨 크기 (3배 확장) */
+  font-weight: bold;
+  color: #333;                /* 로고 글씨 색상 */
+  text-decoration: none;      /* 밑줄 제거 */
+  padding-left: 20px;         /* 왼쪽 여백 */
+}
+
+.logo img {
+  width: 250px;               /* 로고 이미지 크기 3배 확대 */
+  height: auto;               /* 이미지 비율 유지 */
+}
+
+/* 네비게이션 바 메뉴 */
+.main-nav {
+  display: flex;
+  justify-content: flex-start; /* 메뉴를 왼쪽에 정렬 */
+  gap: 60px;                   /* 메뉴 간 간격 3배 확대 */
+}
+
+.main-nav a {
+  font-size: 24px;             /* 버튼 글자 크기 3배 확대 */
+  color: #333;                 /* 메뉴 글씨 색상 */
+  text-decoration: none;       /* 메뉴에 밑줄 제거 */
+  padding: 20px 25px;          /* 메뉴 아이템 간 여백 3배 확대 */
+  transition: background-color 0.3s; /* 호버 시 배경색 변화 */
+}
+
+/* 네비게이션 바 메뉴 글씨 크기 */
+.navbar-nav .nav-link {
+  font-size: 24px;             /* 글씨 크기 */
+  font-weight: bold;
+}
+
+/* 네비게이션 바 배경색 및 글씨 색상 */
+.navbar {
+  background-color: #ffffff; /* 배경 흰색 */
+}
+
+.navbar-nav .nav-link {
+  color: #000000; /* 글씨 검정색 */
+}
+
+.navbar-nav .nav-link:hover {
+  color: #555555; /* 호버 시 색상 */
+}
+
+.main-nav a:hover {
+  background-color: #555;      /* 호버 시 배경색 */
+  border-radius: 5px;          /* 모서리 둥글게 */
+}
+
+/* 반응형 제거: 화면 크기에 따라 메뉴를 세로로 변경하지 않음 */
+@media (max-width: 768px) {
+  .main-nav {
+    flex-direction: row;   /* 메뉴를 세로로 배치하지 않음 */
+    align-items: center;   /* 메뉴 중앙 정렬 */
+  }
+
+  .logo {
+    padding-bottom: 10px;     /* 로고와 메뉴 간 여백 */
+  }
+}
+
+/* 페이지 이미지 */
+.page-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* 푸터 */
+.site-footer {
+  text-align: center;
+  padding: 1rem;
+  background: #333;
+  color: white;
+}
