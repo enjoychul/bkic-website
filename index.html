@@ -1,60 +1,938 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>BKIC - Smart Gateway</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="css/style.css">
-  <!-- 부트스트랩 CSS 추가 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edge AI 게이트웨이 | 냉동고 예지보전</title>
+<meta name="description" content="냉동고가 고장 나기 전에 먼저 알려 주는 Edge AI 게이트웨이. 압축기 전류·사이클·문 열림·외기 온도를 읽어 STM32 MCU 하나로 현장에서 학습하고 판단합니다.">
+<meta property="og:title" content="Edge AI 게이트웨이 — 냉동고가 고장 나기 전에, 먼저 알려 드립니다">
+<meta property="og:description" content="클라우드도 GPU도 없이 MCU 하나로 동작하는 냉동·냉장 설비 예지보전 장비">
+<meta property="og:image" content="https://bkic.kr/img/hero.jpg">
+<meta property="og:url" content="https://bkic.kr/">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --ink:#0c1015; --ink2:#131921; --ink3:#1a222c; --line:#27313d;
+  --text:#e8edf2; --muted:#9aa6b2;
+  --paper:#f5f6f8; --paper2:#ffffff; --dark:#161c24; --dmuted:#5b6673; --dline:#e1e5ea;
+  --gold:#c9a24a; --gold2:#e3c77d; --red:#e0574f; --green:#3fb68b;
+  --r:14px; --max:1180px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;color:var(--dark);background:var(--paper);line-height:1.65;word-break:keep-all;-webkit-font-smoothing:antialiased}
+img{max-width:100%;height:auto;display:block}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 20px}
+section{padding:96px 0}
+.dark{background:var(--ink);color:var(--text)}
+.dark2{background:var(--ink2);color:var(--text)}
+.white{background:var(--paper2)}
+.eyebrow{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:14px}
+h1,h2,h3{line-height:1.3;letter-spacing:-.02em}
+h2{font-size:clamp(26px,3.4vw,38px);font-weight:800;margin-bottom:16px}
+h3{font-size:19px;font-weight:700;margin-bottom:8px}
+.lead{font-size:17px;color:var(--dmuted);max-width:760px}
+.dark .lead,.dark2 .lead{color:var(--muted)}
+.head{margin-bottom:48px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(201,162,74,.14);color:var(--gold);border:1px solid rgba(201,162,74,.35);vertical-align:middle}
+.white .tag,section:not(.dark):not(.dark2) .tag{background:#fbf3df;color:#8a6a1c;border-color:#ead9a9}
+.note{font-size:13px;color:var(--dmuted);margin-top:14px}
+.dark .note,.dark2 .note{color:var(--muted)}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:50;background:rgba(12,16,21,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{font-weight:800;font-size:20px;color:#fff;letter-spacing:.02em}
+.brand span{color:var(--gold)}
+.menu{display:flex;gap:26px;align-items:center}
+.menu a{font-size:15px;color:#c3ccd5}
+.menu a:hover{color:#fff}
+.menu .cta{background:var(--gold);color:#14110a;font-weight:700;padding:8px 16px;border-radius:8px}
+.menu .cta:hover{background:var(--gold2);color:#14110a}
+.burger{display:none;background:none;border:0;color:#fff;font-size:26px;cursor:pointer;width:44px;height:44px}
+
+/* buttons */
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:50px;padding:0 24px;border-radius:10px;font-weight:700;font-size:16px;transition:.15s}
+.btn-gold{background:var(--gold);color:#14110a}
+.btn-gold:hover{background:var(--gold2)}
+.btn-line{border:1px solid #4a5563;color:#fff}
+.btn-line:hover{border-color:#fff}
+
+/* hero */
+.hero{position:relative;min-height:calc(100vh - 64px);min-height:calc(100svh - 64px);display:flex;align-items:stretch;padding:0;overflow:hidden;
+  background:#05090d url(img/hero-bg.jpg) center 45%/cover no-repeat}
+.hero::before{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(5,9,13,.86) 0%,rgba(5,9,13,.62) 34%,rgba(5,9,13,.18) 62%,rgba(5,9,13,.25) 100%),
+             linear-gradient(180deg,rgba(5,9,13,.25) 0%,rgba(5,9,13,0) 30%,rgba(5,9,13,0) 55%,rgba(5,9,13,.8) 100%)}
+.hero>.wrap{position:relative;width:100%;display:flex;flex-direction:column;justify-content:space-between;gap:clamp(16px,3vh,32px);padding-top:clamp(24px,5vh,56px);padding-bottom:clamp(16px,3vh,28px)}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;flex:1}
+.hero h1{font-size:clamp(30px,min(4.4vw,6.2vh),54px);font-weight:800;margin-bottom:clamp(12px,2vh,20px);text-shadow:0 2px 24px rgba(0,0,0,.5)}
+.hero h1 em{font-style:normal;color:var(--gold2)}
+.hero p.sub{font-size:clamp(15px,2.1vh,18px);color:#c9d2db;max-width:560px}
+.hero .btns{margin-top:clamp(18px,3vh,30px)}
+.hero-prod{position:relative;margin:0 0 0 auto;max-width:440px;display:flex;flex-direction:column;align-items:center}
+.hero-prod::before{content:"";position:absolute;left:-22%;right:-22%;top:-18%;bottom:-10%;background:radial-gradient(closest-side,rgba(240,196,90,.75) 0%,rgba(240,196,90,.55) 50%,rgba(240,196,90,.18) 76%,rgba(214,176,88,0) 100%);z-index:0;pointer-events:none}
+.hero-prod img{position:relative;z-index:1;max-height:min(44vh,430px);width:auto;
+  filter:drop-shadow(0 0 1.2px rgba(236,206,130,.95)) drop-shadow(0 0 1.2px rgba(236,206,130,.6)) drop-shadow(0 28px 34px rgba(0,0,0,.75))}
+.hero-prod::after{content:"";position:absolute;z-index:0;left:15%;bottom:16px;width:70%;height:18px;border-radius:50%;background:rgba(0,0,0,.55);filter:blur(10px)}
+.hero-prod figcaption{position:relative;z-index:1;margin-top:6px;font-size:11.5px;color:rgba(232,237,242,.6)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:rgba(19,25,33,.72);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:clamp(12px,1.9vh,20px) 18px}
+.stat b{display:block;font-size:clamp(26px,min(3vw,4.4vh),38px);font-weight:800;color:#fff;line-height:1.1}
+.stat b small{font-size:.55em;font-weight:700;margin-left:2px}
+.stat strong{display:block;margin-top:6px;font-size:15px;color:var(--gold2)}
+.stat span{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.simnote{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:10px 16px;border-radius:10px;background:rgba(30,24,10,.7);backdrop-filter:blur(6px);border:1px solid rgba(201,162,74,.4);font-size:13.5px;color:#e2cd94}
+@media (max-height:720px) and (min-width:981px){.hero h1{font-size:clamp(28px,5.6vh,40px)}.hero-prod img{max-height:36vh}.stat span{display:none}.stat strong{margin-top:4px}.hero>.wrap{padding-top:16px;gap:12px}.hero .eyebrow{margin-bottom:6px}.hero .btn{height:44px}.hero .btns{margin-top:14px}.stat{padding:10px 16px}}
+.hero .bg-note{position:absolute;right:16px;top:12px;font-size:11px;color:rgba(255,255,255,.45)}
+.render{position:relative;border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55);border:1px solid #2f3946}
+.render figcaption{position:absolute;right:10px;bottom:10px;font-size:11.5px;color:#4b5563;background:rgba(255,255,255,.8);padding:3px 8px;border-radius:6px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:56px}
+.stat{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:22px 20px}
+.stat b{display:block;font-size:clamp(30px,3.4vw,40px);font-weight:800;color:#fff;line-height:1.1}
+.stat b small{font-size:.55em;font-weight:700;margin-left:2px}
+.stat strong{display:block;margin-top:10px;font-size:16px;color:var(--gold2)}
+.stat span{display:block;font-size:13.5px;color:var(--muted);margin-top:4px}
+.simnote{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 16px;border-radius:10px;background:rgba(201,162,74,.08);border:1px solid rgba(201,162,74,.28);font-size:14px;color:#d9c48f}
+
+/* problem */
+.prob-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:stretch}
+.plist{list-style:none;display:grid;grid-auto-rows:1fr;gap:16px}
+.plist li{display:flex;align-items:center;background:#fff;border:1px solid var(--dline);border-radius:var(--r);padding:20px 22px;font-size:16.5px}
+.plist li b{color:#b23a33}
+.bars{background:#fff;border:1px solid var(--dline);border-radius:var(--r);padding:28px}
+.bars h3{font-size:16px;margin-bottom:22px}
+.bar{margin-bottom:20px}
+.bar .lbl{display:flex;justify-content:space-between;font-size:14.5px;margin-bottom:7px;font-weight:600}
+.bar .trk{height:16px;background:#eef1f4;border-radius:999px;overflow:hidden}
+.bar .fill{height:100%;border-radius:999px}
+.bars .note{margin-top:10px}
+.bars{display:flex;flex-direction:column}
+.bars .bar:last-of-type{margin-bottom:0}
+.ifbox{margin-top:auto;padding:14px 16px;border-radius:10px;background:var(--paper);border:1px solid var(--dline);font-size:14px;color:#3b4652;line-height:1.6}
+.ifbox b{display:block;font-size:14.5px;color:var(--dark);margin-bottom:3px}
+.bars .bar:nth-of-type(3){margin-bottom:22px}
+
+/* solution */
+#solution{padding:clamp(48px,7vh,72px) 0}
+#solution .head{margin-bottom:clamp(18px,3vh,28px)}
+#solution .head h2{margin-bottom:8px}
+.sol-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:32px;align-items:center}
+.sol-img{border-radius:var(--r);border:1px solid var(--dline);background:linear-gradient(#f7f9fb,#eef2f5);padding:14px 14px 8px;position:relative}
+.sol-img .diag{display:block;width:100%;height:auto;max-height:62vh}
+.sol-img figcaption{text-align:right;font-size:12px;color:#8a96a3;margin-top:2px}
+.diag .cap{font-size:13px;font-weight:600;fill:#5b6673}
+.diag .bdg circle{fill:#161c24;stroke:#fff;stroke-width:2.5}
+.diag .bdg text{font-size:15px;font-weight:800;fill:#e3c77d;text-anchor:middle}
+.diag .pill text{font-size:11.5px;font-weight:700;text-anchor:middle}
+.diag .pill rect{stroke-width:1.5}
+.diag .w{stroke-dasharray:1400;stroke-dashoffset:1400;transition:stroke-dashoffset 1.6s ease}
+.sol-img.in .diag .w{stroke-dashoffset:0}
+@media (prefers-reduced-motion:reduce){.diag .w{stroke-dasharray:none;stroke-dashoffset:0}}
+.steps{list-style:none;counter-reset:s;display:grid;gap:8px}
+.steps li{display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:center;padding:10px 14px;border-radius:12px;background:var(--paper);border:1px solid var(--dline);border-left:4px solid var(--c,#161c24)}
+.steps li::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--dark);color:var(--gold2);font-weight:800;font-size:14px}
+.steps b{display:block;font-size:15.5px;line-height:1.35}
+.steps span{font-size:14px;color:var(--dmuted);line-height:1.45}
+
+/* cards */
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.card{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:28px 24px}
+.card .no{font-size:14px;font-weight:800;color:var(--gold);letter-spacing:.1em}
+.card h3{margin-top:14px;color:#fff}
+.card p{color:var(--muted);font-size:15px}
+.lcard{background:#fff;border:1px solid var(--dline);border-radius:var(--r);padding:26px 24px}
+.lcard p{color:var(--dmuted);font-size:15px}
+
+/* ai */
+.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;position:relative}
+.fstep{background:#fff;border:1px solid var(--dline);border-radius:var(--r);padding:26px 24px;position:relative}
+.fstep .k{font-size:13px;font-weight:800;color:#8a6a1c;letter-spacing:.08em}
+.fstep h3{margin-top:8px}
+.fstep p{font-size:15px;color:var(--dmuted)}
+.fstep .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{font-size:12.5px;padding:4px 10px;border-radius:999px;background:var(--paper);border:1px solid var(--dline);color:#3b4652}
+.engine{background:#fff;border:1px solid var(--dline);border-radius:18px;padding:22px}
+.eng-io{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 14px;border-radius:12px;background:var(--paper);border:1px dashed #c9d1d9}
+.eng-io.out{background:#161c24;border:1px solid #161c24;margin-top:0}
+.eng-io.out .chip{background:rgba(227,199,125,.12);border-color:rgba(227,199,125,.4);color:#f0dca8;font-weight:600}
+.io-k{font-size:12.5px;font-weight:800;letter-spacing:.08em;color:#8a96a3;margin-right:6px}
+.eng-io.out .io-k{color:var(--gold2)}
+.models{display:grid;grid-template-columns:1fr 34px 1fr 34px 1fr;align-items:stretch;margin:14px 0}
+.model{border:1px solid var(--dline);border-radius:14px;padding:20px;background:linear-gradient(180deg,#fff,#fafbfc);position:relative}
+.model::before{content:"";position:absolute;left:20px;right:20px;top:-1px;height:3px;border-radius:0 0 3px 3px;background:var(--gold)}
+.mk{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#8a6a1c;letter-spacing:.04em}
+.mk span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#161c24;color:var(--gold2);font-size:12px}
+.model h3{margin:10px 0 6px;font-size:18px}
+.model p{font-size:14.5px;color:var(--dmuted)}
+.model .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.arrow{position:relative}
+.arrow::before{content:"";position:absolute;left:8px;right:10px;top:50%;height:2px;background:#c9a24a}
+.arrow::after{content:"";position:absolute;right:6px;top:calc(50% - 6px);border:6px solid transparent;border-left:9px solid #c9a24a;border-right:0}
+.tbl.vs th.us{background:#161c24;color:var(--gold2)}
+.tbl.vs td.hi{background:#fffaf0;border-left:2px solid #ead9a9}
+.tbl.vs td.hi b{display:block;color:#5c4410;font-size:16px}
+.tbl.vs td.hi span{display:block;font-size:14px;color:#5b6673;margin-top:2px}
+.tbl.vs td:nth-child(2){color:#6b7783}
+.guard{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.guard div{background:var(--dark);color:#d4dbe2;border-radius:var(--r);padding:20px 24px;font-size:15px}
+.guard b{color:var(--gold2);display:block;margin-bottom:4px}
+
+/* tables */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15.5px;background:#fff;border:1px solid var(--dline);border-radius:var(--r);overflow:hidden}
+.tbl th,.tbl td{padding:15px 18px;text-align:left;vertical-align:top;border-bottom:1px solid var(--dline)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl thead th{background:#eef1f4;font-size:14px;color:#3b4652;font-weight:700}
+.tbl td:first-child{font-weight:700;white-space:nowrap;color:#2a333d}
+.tbl .hi{background:#fffaf0}
+.tbl .hi b{color:#7a5a12}
+.dark .tbl,.dark2 .tbl{background:var(--ink3);border-color:var(--line)}
+.dark .tbl th,.dark .tbl td,.dark2 .tbl th,.dark2 .tbl td{border-color:var(--line)}
+.dark .tbl thead th,.dark2 .tbl thead th{background:#202a35;color:#c3ccd5}
+.dark .tbl td:first-child,.dark2 .tbl td:first-child{color:#e8edf2}
+.dark .tbl td,.dark2 .tbl td{color:#c3ccd5}
+.dark .tbl td b,.dark2 .tbl td b{color:var(--gold2);font-size:1.12em}
+.cmp-title{margin:56px 0 18px;font-size:22px}
+
+/* limit */
+.limit{margin-top:22px;background:var(--ink3);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:12px;padding:20px 24px;color:#c3ccd5;font-size:15.5px}
+.limit b{color:#fff}
+
+/* specs */
+.spec-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:24px;align-items:start}
+.mcu{background:var(--dark);color:#d4dbe2;border-radius:var(--r);padding:28px 26px;position:sticky;top:88px}
+.mcu h3{color:#fff;font-size:21px}
+.mcu p{color:#aab5c0;font-size:15px;margin-bottom:16px}
+.mcu ul{list-style:none;display:grid;gap:10px}
+.mcu li{padding-left:18px;position:relative;font-size:15px}
+.mcu li::before{content:"";position:absolute;left:0;top:10px;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.mcu .big{margin-top:20px;padding-top:18px;border-top:1px solid #2c3540}
+.mcu .big b{font-size:34px;color:var(--gold2);font-weight:800}
+.mcu .big span{display:block;font-size:13.5px;color:#93a0ac}
+
+/* design */
+#design{padding:clamp(48px,7vh,72px) 0}
+.des-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:36px;align-items:center}
+.render.inst img{width:100%;height:auto}
+.render.inst figcaption{color:#4b5563}
+.des-list{list-style:none;display:grid;gap:8px;margin-top:18px}
+.des-list li{padding:10px 16px;border-radius:12px;background:var(--ink3);border:1px solid var(--line);font-size:15.5px;color:#c3ccd5}
+.des-list b{color:#fff}
+.quote{margin-top:22px;font-size:18px;color:var(--gold2);font-weight:600}
+.gallery{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:24px}
+.gallery figure{border-radius:12px;overflow:hidden;border:1px solid var(--line);position:relative;cursor:zoom-in}
+.gallery figcaption{position:absolute;left:8px;bottom:8px;font-size:12px;background:rgba(12,16,21,.75);color:#dfe5ea;padding:2px 8px;border-radius:6px}
+.gallery img{transition:transform .3s;width:100%;aspect-ratio:16/10;object-fit:cover}
+.gallery figure:hover img{transform:scale(1.04)}
+.lcdbox{margin-top:16px;display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:center;background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.lcdbox img{border-radius:10px}
+.lcdbox p{color:#c3ccd5;font-size:15px}
+.lcdbox b{color:#fff;display:block;font-size:17px;margin-bottom:6px}
+
+/* timeline */
+.tl{list-style:none;position:relative;margin-left:8px}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--dline)}
+.tl li{position:relative;padding:0 0 26px 40px}
+.tl li::before{content:"";position:absolute;left:0;top:5px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #b8c0c9}
+.tl li.done::before{background:var(--green);border-color:var(--green)}
+.tl li.now::before{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 6px rgba(201,162,74,.2)}
+.tl .when{font-size:13.5px;font-weight:700;color:var(--dmuted)}
+.tl h3{font-size:17.5px;margin:2px 0 4px}
+.tl p{font-size:15px;color:var(--dmuted)}
+.st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;margin-left:6px;vertical-align:middle}
+.st.d{background:#e3f5ee;color:#1f7a57}.st.n{background:#fbf3df;color:#8a6a1c}.st.p{background:#eef1f4;color:#5b6673}
+#roadmap{padding:clamp(48px,7vh,72px) 0}
+#roadmap .head{margin-bottom:28px}
+.rm-sum{display:inline-flex;align-items:center;gap:10px;margin:2px 0 12px}
+.rm-sum span{font-size:15px;font-weight:800;padding:7px 14px;border-radius:999px}
+.rm-sum .ok{background:#e3f5ee;color:#1f7a57;border:1px solid #bfe6d5}
+.rm-sum .go{background:#161c24;color:var(--gold2)}
+.rm-sum i{width:28px;height:2px;background:#c9a24a;position:relative}
+.rm-sum i::after{content:"";position:absolute;right:-2px;top:-5px;border:6px solid transparent;border-left:8px solid #c9a24a;border-right:0}
+.hz{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);gap:12px;position:relative;padding-top:34px}
+.hz::before{content:"";position:absolute;left:10px;right:10px;top:13px;height:3px;background:linear-gradient(90deg,var(--green) 0 60%,var(--gold) 60% 80%,#d5dbe1 80%)}
+.hz li{position:relative;padding:18px;border-radius:14px;background:var(--paper);border:1px solid var(--dline)}
+.hz li::before{content:"";position:absolute;left:18px;top:-29px;width:17px;height:17px;border-radius:50%;background:#fff;border:3px solid #b8c0c9}
+.hz li.done::before{background:var(--green);border-color:var(--green)}
+.hz li.now{background:#161c24;border-color:#161c24}
+.hz li.now::before{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 6px rgba(201,162,74,.22)}
+.hz .when{font-size:13px;font-weight:700;color:var(--dmuted)}
+.hz h3{font-size:17px;margin:4px 0 8px}
+.hz .st{margin-left:0;display:inline-block}
+.nw{white-space:nowrap}
+.hz p{font-size:14px;color:var(--dmuted);margin-top:10px}
+.hz li.now h3{color:#fff}.hz li.now .when{color:var(--gold2)}.hz li.now p{color:#aab5c0}
+.callout{margin-top:20px;padding:22px 26px;border-radius:var(--r);background:var(--dark);color:#fff;font-size:18px;font-weight:700}
+.callout span{color:var(--gold2)}
+
+/* company */
+#company .co-grid{align-items:stretch}
+.co-card{display:flex;flex-direction:column;gap:6px}
+.co-logo{font-size:30px;font-weight:900;letter-spacing:.02em;color:#161c24;line-height:1}
+.co-logo span{color:var(--gold)}
+.co-card h3{margin:8px 0 0;font-size:19px}
+.co-tag{color:var(--dmuted);font-size:15px}
+.co-blk{margin-top:12px}
+.co-blk b{display:block;font-size:13px;color:#8a6a1c;letter-spacing:.04em;margin-bottom:6px}
+.co-blk .chips{display:flex;flex-wrap:wrap;gap:6px}
+.sgw{display:grid;grid-template-columns:42% 1fr;gap:20px;align-items:center}
+.sgw-img{border-radius:12px;overflow:hidden;background:#fff;border:1px solid var(--dline)}
+.sgw-k{font-size:13px;font-weight:800;color:#8a6a1c;letter-spacing:.04em}
+.sgw h3{margin:4px 0 8px;font-size:19px}
+.kc{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#1f3b63;background:#eef3fb;border:1px solid #cfdcf0;border-radius:8px;padding:4px 10px 4px 4px}
+.kc b{display:grid;place-items:center;width:30px;height:22px;border-radius:5px;background:#1f3b63;color:#fff;font-size:12px;font-weight:900;letter-spacing:.02em}
+.sgw ul{list-style:none;margin-top:12px;display:grid;gap:6px}
+.sgw li{font-size:14.5px;color:#3b4652;padding-left:16px;position:relative}
+.sgw li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.refs{margin-top:28px;border-radius:20px;padding:30px;background:radial-gradient(900px 300px at 85% 0%,#223042,#0f141b 70%);color:var(--text)}
+.refs-h h3{font-size:26px;color:#fff}
+.refs-h h3 small{font-size:15px;font-weight:600;color:var(--muted);margin-left:10px}
+.refs-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.ref{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:22px;position:relative;overflow:hidden}
+.ref::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold)}
+.ref-k{font-size:12.5px;font-weight:800;letter-spacing:.08em;color:var(--gold)}
+.ref h4{font-size:19px;color:#fff;margin:4px 0 16px}
+.ref-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ref-nums div{background:rgba(255,255,255,.05);border-radius:12px;padding:12px}
+.ref-nums b{display:block;font-size:28px;font-weight:800;color:#fff;line-height:1.1}
+.ref-nums b small{font-size:.55em;margin-left:2px;color:var(--gold2)}
+.ref-nums span{display:block;font-size:12.5px;color:var(--muted);margin-top:4px}
+.ref-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:16px 0 10px}
+.ref-flow span{font-size:12.5px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.18);color:#d4dbe2}
+.ref-flow span.hl{border-color:var(--gold);color:var(--gold2);font-weight:700}
+.ref-flow i{width:14px;height:2px;background:#5b6673;position:relative}
+.ref-flow i::after{content:"";position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left:6px solid #5b6673;border-right:0}
+.ref p{font-size:14.5px;color:#aab5c0}
+.co-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.co-grid .lcard h3{font-size:20px}
+.co-grid ul{list-style:none;margin-top:12px;display:grid;gap:8px}
+.co-grid li{font-size:15px;color:#3b4652;padding-left:16px;position:relative}
+.co-grid li::before{content:"–";position:absolute;left:0;color:var(--gold)}
+.skills{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+
+/* contact */
+.contact{background:linear-gradient(135deg,#141b23,#0c1015)}
+.ct-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:40px;align-items:start}
+.who{list-style:none;display:grid;gap:10px;margin-top:22px}
+.who li{padding:12px 16px;border-radius:10px;background:var(--ink3);border:1px solid var(--line);color:#c3ccd5;font-size:15.5px}
+.ct-box{background:var(--ink3);border:1px solid var(--line);border-radius:var(--r);padding:28px}
+.ct-box h3{color:#fff}
+.ct-box p{color:var(--muted);font-size:15px}
+.ct-items{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 22px}
+.ct-items span{font-size:13px;padding:5px 11px;border-radius:999px;border:1px solid #3a4553;color:#c3ccd5}
+.ct-line{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);font-size:15px;color:#c3ccd5}
+.ct-line b{color:#fff}
+.todo{color:#f0a19b !important}
+
+footer{background:#080b0f;color:#7d8894;font-size:14px;padding:36px 0}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+/* lightbox */
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;place-items:center;z-index:100;padding:20px;cursor:zoom-out}
+.lb.on{display:grid}
+.lb img{max-height:90vh;border-radius:12px}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}html{scroll-behavior:auto}}
+
+/* responsive */
+@media (max-width:980px){
+  .hero{min-height:auto}
+  .hero-prod{margin:0 auto}
+  .hero::before{background:linear-gradient(180deg,rgba(5,9,13,.8),rgba(5,9,13,.9))}
+  .hero-grid,.prob-grid,.sol-grid,.des-grid,.spec-grid,.ct-grid,.co-grid{grid-template-columns:1fr}
+  .stats,.cards4{grid-template-columns:1fr 1fr}
+  .flow{grid-template-columns:1fr}
+  .models{grid-template-columns:1fr;gap:0}
+  .arrow{height:28px}
+  .arrow::before{left:50%;right:auto;top:4px;bottom:8px;width:2px;height:auto}
+  .arrow::after{left:calc(50% - 6px);right:auto;top:auto;bottom:2px;border:6px solid transparent;border-top:9px solid #c9a24a;border-bottom:0}
+  .gallery{grid-template-columns:repeat(3,1fr)}
+  .refs-grid{grid-template-columns:1fr}
+  .sgw{grid-template-columns:1fr}
+  .refs{padding:20px}
+  .hz{grid-template-columns:1fr;padding-top:0;padding-left:30px}
+  .hz::before{left:8px;right:auto;top:10px;bottom:10px;width:3px;height:auto;background:linear-gradient(180deg,var(--green) 0 60%,var(--gold) 60% 80%,#d5dbe1 80%)}
+  .hz li::before{left:-30px;top:22px}
+  .hz li{padding:16px 18px}
+  .mcu{position:static}
+  .menu{display:none;position:absolute;top:64px;left:0;right:0;flex-direction:column;gap:0;background:var(--ink);border-bottom:1px solid var(--line);padding:8px 0}
+  .menu.open{display:flex}
+  .menu a{padding:14px 20px;width:100%}
+  .menu .cta{margin:8px 20px;width:auto;text-align:center}
+  .burger{display:block}
+}
+@media (max-width:640px){
+  section{padding:68px 0}
+  .stats,.cards4,.guard{grid-template-columns:1fr}
+  .lcdbox{grid-template-columns:1fr}
+  /* 표 → 카드형 */
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl tr{border-bottom:1px solid var(--dline);padding:12px 4px}
+  .dark .tbl tr,.dark2 .tbl tr{border-color:var(--line)}
+  .tbl td{border:0;padding:4px 14px}
+  .tbl td:first-child{white-space:normal;font-size:16px}
+  .tbl td[data-l]::before{content:attr(data-l);display:block;font-size:12px;font-weight:700;color:#8a96a3;margin-bottom:1px}
+}
+</style>
 </head>
 <body>
-  <!-- 상단 네비게이션 -->
-  <header class="site-header">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container-fluid">
-        <!-- 로고 -->
-        <a class="navbar-brand" href="index.html">
-          <img src="img/logo.png" alt="BKIC 로고" width="150">
-        </a>
-        <!-- 메뉴 버튼 (반응형) -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <!-- 메뉴 항목 -->
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="index.html">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="about.html">About</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="service.html">Service</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="contact.html">Contact</a>
-            </li>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">BKIC<span>.</span></a>
+    <button class="burger" aria-label="메뉴 열기" aria-expanded="false">☰</button>
+    <nav class="menu">
+      <a href="#problem">문제</a>
+      <a href="#solution">해결 방법</a>
+      <a href="#ai">AI 원리</a>
+      <a href="#performance">성능</a>
+      <a href="#spec">제원</a>
+      <a href="#design">디자인</a>
+      <a href="#company">회사 소개</a>
+      <a class="cta" href="#contact">시범 설치 문의</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- 1. 히어로 -->
+<section class="hero dark">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">Edge AI Gateway · 냉동고 예지보전</span>
+        <h1>냉동고가 고장 나기 전에,<br><em>먼저 알려 드립니다</em></h1>
+        <p class="sub">압축기 전류·사이클·문 열림·외기 온도를 함께 읽어, 온도가 무너지기 전에 설비 이상을 찾아냅니다. STM32 MCU 하나로 현장에서 학습하고 판단합니다. 클라우드도, GPU도 필요 없습니다.</p>
+        <div class="btns">
+          <a class="btn btn-gold" href="#contact">시범 설치 문의</a>
+          <a class="btn btn-line" href="#spec">제원 보기</a>
+        </div>
+      </div>
+      <figure class="hero-prod">
+        <img src="img/hero-cut.png" alt="Edge AI 게이트웨이 VISOR 케이스 렌더 이미지" width="704" height="773">
+        <figcaption>렌더 이미지 (실물과 다를 수 있음)</figcaption>
+      </figure>
+    </div>
+
+    <div class="hero-bottom">
+    <div class="stats">
+      <div class="stat rv"><b>100<small>%</small></b><strong>고장 감지</strong><span>느린 고장·갑작스런 고장 40대 전부</span></div>
+      <div class="stat rv"><b>97.5<small>%</small></b><strong>원인 1순위 적중</strong><span>콘덴서·냉매·패킹 등 6종</span></div>
+      <div class="stat rv"><b>0<small>건</small></b><strong>정상 냉동고 오경보</strong><span>2년, 사계절·폭염·정전 포함</span></div>
+      <div class="stat rv"><b>약 10<small>일 전</small></b><strong>점검 권장 예고</strong><span>예상 오차 중앙값 20%</span></div>
+    </div>
+    <div class="simnote"><span>※</span><span><b>시뮬레이션 결과</b>입니다. 가상 현장 10곳 · 냉동고 200대 · 2년 (게이트웨이와 같은 C 코드로 실행). 현장 실측 후 갱신 예정.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. 문제 -->
+<section id="problem">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">Problem</span>
+      <h2>온도 경보는 이미 늦습니다</h2>
+    </div>
+    <div class="prob-grid">
+      <ul class="plist rv">
+        <li><p>냉동고 온도가 기준을 벗어났을 때는 <b>이미 압축기·냉매·콘덴서에 문제가 진행된 뒤</b>입니다.</p></li>
+        <li><p>같은 조건에서 관리 기준 온도 경보는 <b>느린 고장의 40%만</b> 잡았고, 그것도 <b>AI보다 2~3주 늦었습니다</b> <span class="tag">시뮬레이션</span></p></li>
+        <li><p>제약·백신·시료처럼 <b>온도 이탈 = 폐기</b>인 현장에서는 이 2~3주가 손실을 결정합니다.</p></li>
+      </ul>
+      <div class="bars rv">
+        <h3>고장 감지율 비교 <span class="tag">시뮬레이션</span></h3>
+        <div class="bar"><div class="lbl"><span>Edge AI 게이트웨이</span><span>100%</span></div><div class="trk"><div class="fill" style="width:100%;background:var(--gold)"></div></div></div>
+        <div class="bar"><div class="lbl"><span>Isolation Forest (오경보 0 기준)</span><span>68%</span></div><div class="trk"><div class="fill" style="width:68%;background:#8e9aa7"></div></div></div>
+        <div class="bar"><div class="lbl"><span>온도 기준 경보</span><span>40% · 2~3주 늦음</span></div><div class="trk"><div class="fill" style="width:40%;background:var(--red)"></div></div></div>
+        <div class="ifbox">
+          <b>Isolation Forest란?</b>
+          이상탐지(Anomaly Detection) 분야에서 가장 널리 쓰이는 대표적인 머신러닝 기법입니다. 고장 데이터 없이 정상 데이터만으로 학습해, 다른 값들과 동떨어진 데이터를 이상으로 판단합니다. 설비 예지보전 연구와 제품에서 기준 비교 대상으로 흔히 쓰입니다.
+        </div>
+        <p class="note">같은 데이터 기준. Isolation Forest는 고장 40대 전체 감지율(1년 학습), 온도 기준 경보는 느린 고장 대상.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. 해결 방법 -->
+<section id="solution" class="white">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">Solution</span>
+      <h2>냉동고에 붙이고, 센서만 연결</h2>
+      <p class="lead">기존 냉동고를 바꿀 필요가 없습니다. 게이트웨이를 옆면에 걸고 전류·도어·온도 센서를 연결하면 그날부터 학습을 시작합니다.</p>
+    </div>
+    <div class="sol-grid">
+      <figure class="sol-img rv">
+<svg class="diag" viewBox="0 0 1000 640" role="img" aria-labelledby="dgT dgD" xmlns="http://www.w3.org/2000/svg">
+<title id="dgT">Edge AI 게이트웨이 설치 구성도</title>
+<desc id="dgD">산업용 냉동고에 경광등, 도어 접점, 고내 온도 센서, 압축기 전류 CT를 연결하고 게이트웨이를 LAN으로 서버와 연결한 구성도</desc>
+<defs>
+ <linearGradient id="ss" x1="0" x2="1"><stop offset="0" stop-color="#e9edf1"/><stop offset=".45" stop-color="#d3d9df"/><stop offset=".55" stop-color="#e4e8ec"/><stop offset="1" stop-color="#c3cad1"/></linearGradient>
+ <linearGradient id="ssd" x1="0" x2="1"><stop offset="0" stop-color="#dfe4e9"/><stop offset=".6" stop-color="#cdd4db"/><stop offset="1" stop-color="#bcc4cc"/></linearGradient>
+ <linearGradient id="hdl" x1="0" x2="1"><stop offset="0" stop-color="#9aa4ae"/><stop offset=".5" stop-color="#f4f6f8"/><stop offset="1" stop-color="#8b959f"/></linearGradient>
+ <filter id="sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0b1220" flood-opacity=".22"/></filter>
+ <filter id="gl"><feGaussianBlur stdDeviation="4"/></filter>
+</defs>
+<!-- floor -->
+<rect x="0" y="600" width="1000" height="40" fill="#e8ecf0"/>
+<line x1="0" y1="600" x2="1000" y2="600" stroke="#cfd6dd"/>
+<ellipse cx="232" cy="604" rx="190" ry="10" fill="#0b1220" opacity=".12"/>
+
+<!-- freezer -->
+<g filter="url(#sh)">
+ <rect x="70" y="116" width="324" height="476" rx="6" fill="url(#ss)" stroke="#a9b2bb"/>
+</g>
+<!-- header panel -->
+<rect x="70" y="116" width="324" height="52" rx="6" fill="#dfe4e9" stroke="#a9b2bb"/>
+<rect x="88" y="130" width="78" height="26" rx="4" fill="#1b222b"/>
+<text x="127" y="148.5" text-anchor="middle" font-family="ui-monospace,Consolas,monospace" font-size="15" font-weight="700" fill="#ff5a4e">-20.0</text>
+<circle cx="180" cy="137" r="3" fill="#3fb68b"/><circle cx="180" cy="149" r="3" fill="#9aa4ae"/>
+<g fill="#b6bec6">
+<rect x="270" y="132" width="6" height="22" rx="2"/>
+<rect x="283" y="132" width="6" height="22" rx="2"/>
+<rect x="296" y="132" width="6" height="22" rx="2"/>
+<rect x="309" y="132" width="6" height="22" rx="2"/>
+<rect x="322" y="132" width="6" height="22" rx="2"/>
+<rect x="335" y="132" width="6" height="22" rx="2"/>
+<rect x="348" y="132" width="6" height="22" rx="2"/>
+<rect x="361" y="132" width="6" height="22" rx="2"/>
+</g>
+<!-- doors -->
+<rect x="80" y="176" width="148" height="320" rx="4" fill="url(#ssd)" stroke="#a3acb5"/>
+<rect x="236" y="176" width="148" height="320" rx="4" fill="url(#ssd)" stroke="#a3acb5"/>
+<rect x="212" y="250" width="8" height="150" rx="4" fill="url(#hdl)" stroke="#8b959f" stroke-width=".6"/>
+<rect x="244" y="250" width="8" height="150" rx="4" fill="url(#hdl)" stroke="#8b959f" stroke-width=".6"/>
+<rect x="96" y="190" width="54" height="22" rx="3" fill="#f3f5f7" stroke="#b9c1c9"/>
+<text x="123" y="205" text-anchor="middle" font-size="10" font-weight="700" fill="#6b7783">-20°C</text>
+<!-- machine compartment -->
+<rect x="80" y="506" width="304" height="76" rx="4" fill="#cfd5db" stroke="#a3acb5"/>
+<g stroke="#9aa4ae" stroke-width="3" stroke-linecap="round">
+<line x1="100" y1="520" x2="364" y2="520"/>
+<line x1="100" y1="530" x2="364" y2="530"/>
+<line x1="100" y1="540" x2="364" y2="540"/>
+<line x1="100" y1="550" x2="364" y2="550"/>
+<line x1="100" y1="560" x2="364" y2="560"/>
+<line x1="100" y1="570" x2="364" y2="570"/>
+</g>
+<rect x="84" y="592" width="18" height="8" rx="2" fill="#7c8691"/><rect x="362" y="592" width="18" height="8" rx="2" fill="#7c8691"/>
+<text x="232" y="628" text-anchor="middle" class="cap">산업용 냉동고</text>
+
+<!-- beacon (stack light) -->
+<g>
+ <rect x="203" y="104" width="22" height="12" rx="2" fill="#5b6673"/>
+ <rect x="210" y="70" width="8" height="34" fill="#8b959f"/>
+ <ellipse cx="214" cy="40" rx="22" ry="22" fill="#e0574f" opacity=".35" filter="url(#gl)"/>
+ <rect x="200" y="22" width="28" height="16" rx="3" fill="#e0574f"/>
+ <rect x="200" y="38" width="28" height="16" rx="3" fill="#f2b33d"/>
+ <rect x="200" y="54" width="28" height="16" rx="3" fill="#3fb68b"/>
+ <rect x="202" y="16" width="24" height="7" rx="3" fill="#5b6673"/>
+</g>
+
+<!-- door contact -->
+<g>
+ <rect x="378" y="203" width="10" height="18" rx="2" fill="#f8fafc" stroke="#475569"/>
+ <rect x="390" y="203" width="10" height="18" rx="2" fill="#475569"/>
+</g>
+
+<!-- temp probe -->
+<line x1="394" y1="318" x2="300" y2="318" stroke="#5b7cfa" stroke-width="2.5" stroke-dasharray="5 5" opacity=".75"/>
+<rect x="282" y="312" width="20" height="12" rx="6" fill="#5b7cfa"/>
+<circle cx="394" cy="318" r="4.5" fill="#fff" stroke="#475569" stroke-width="2"/>
+
+<!-- power cable + CT -->
+<path d="M384,566 L416.0,566.0 Q430,566 444.0,566.0 L526.0,566.0 Q540,566 540.0,580.0 L540,600" fill="none" stroke="#1f2933" stroke-width="5" stroke-linecap="round"/>
+<rect x="531" y="592" width="18" height="10" rx="2" fill="#475569"/>
+<text x="596" y="590" class="cap" text-anchor="middle">압축기 전원</text>
+
+<path d="M597,372 L597.0,382.0 Q597,392 587.0,392.0 L514.0,392.0 Q500,392 500.0,378.0 L500.0,72.0 Q500,58 486.0,58.0 L221.0,58.0 Q214,58 214.0,65.0 L214,72" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M640,372 L640.0,390.0 Q640,404 626.0,404.0 L499.0,404.0 Q485,404 485.0,390.0 L485.0,226.0 Q485,212 471.0,212.0 L402,212" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M727,372 L727.0,402.0 Q727,416 713.0,416.0 L484.0,416.0 Q470,416 470.0,402.0 L470.0,332.0 Q470,318 456.0,318.0 L394,318" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M768,372 L768.0,526.0 Q768,540 754.0,540.0 L452.5,540.0 Q447,540 447.0,545.5 L447,551" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M840,372 L840.0,457.0 Q840,470 853.0,470.0 L866,470" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="w w-do" d="M597,372 L597.0,382.0 Q597,392 587.0,392.0 L514.0,392.0 Q500,392 500.0,378.0 L500.0,72.0 Q500,58 486.0,58.0 L221.0,58.0 Q214,58 214.0,65.0 L214,72" fill="none" stroke="#d4972a" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="w w-di" d="M640,372 L640.0,390.0 Q640,404 626.0,404.0 L499.0,404.0 Q485,404 485.0,390.0 L485.0,226.0 Q485,212 471.0,212.0 L402,212" fill="none" stroke="#14a38b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="w w-ai" d="M727,372 L727.0,402.0 Q727,416 713.0,416.0 L484.0,416.0 Q470,416 470.0,402.0 L470.0,332.0 Q470,318 456.0,318.0 L394,318" fill="none" stroke="#5b7cfa" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="w w-ct" d="M768,372 L768.0,526.0 Q768,540 754.0,540.0 L452.5,540.0 Q447,540 447.0,545.5 L447,551" fill="none" stroke="#e0574f" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="w w-lan" d="M840,372 L840.0,457.0 Q840,470 853.0,470.0 L866,470" fill="none" stroke="#334155" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<g>
+ <rect x="432" y="551" width="30" height="30" rx="8" fill="#e0574f"/>
+ <rect x="440" y="559" width="14" height="14" rx="7" fill="#1f2933"/>
+</g>
+<g filter="url(#sh)"><image href="img/gw-front.png" x="560" y="96" width="300" height="276"/></g>
+<circle cx="597" cy="372" r="4" fill="#d4972a" stroke="#fff" stroke-width="1.5"/>
+<circle cx="640" cy="372" r="4" fill="#14a38b" stroke="#fff" stroke-width="1.5"/>
+<circle cx="727" cy="372" r="4" fill="#5b7cfa" stroke="#fff" stroke-width="1.5"/>
+<circle cx="768" cy="372" r="4" fill="#e0574f" stroke="#fff" stroke-width="1.5"/>
+<circle cx="840" cy="372" r="4" fill="#334155" stroke="#fff" stroke-width="1.5"/>
+<g>
+ <rect x="866" y="420" width="116" height="78" rx="6" fill="#1b222b" stroke="#334155"/>
+ <rect x="874" y="428" width="100" height="62" rx="3" fill="#0f172a"/>
+ <polyline points="880,476 892,468 904,472 916,458 928,462 940,450 952,456 966,444" fill="none" stroke="#14a38b" stroke-width="2"/>
+ <rect x="880" y="434" width="34" height="6" rx="2" fill="#c9a24a"/>
+ <rect x="920" y="434" width="20" height="6" rx="2" fill="#334155"/>
+ <path d="M852 498 h144 l-10 14 h-124 z" fill="#cbd5e1" stroke="#94a3b8"/>
+ <text x="924" y="536" class="cap" text-anchor="middle">웹 화면 · 서버</text>
+</g>
+<g class="pill"><rect x="302.0" y="47" width="76" height="22" rx="11" fill="#fff" stroke="#d4972a"/><text x="340" y="62.5" fill="#d4972a">DO 릴레이</text></g>
+<g class="pill"><rect x="423.0" y="201" width="34" height="22" rx="11" fill="#fff" stroke="#14a38b"/><text x="440" y="216.5" fill="#14a38b">DI</text></g>
+<g class="pill"><rect x="401.0" y="307" width="62" height="22" rx="11" fill="#fff" stroke="#5b7cfa"/><text x="432" y="322.5" fill="#5b7cfa">4-20mA</text></g>
+<g class="pill"><rect x="588.0" y="529" width="64" height="22" rx="11" fill="#fff" stroke="#e0574f"/><text x="620" y="544.5" fill="#e0574f">CT 전류</text></g>
+<g class="pill"><rect x="818.0" y="401" width="44" height="22" rx="11" fill="#fff" stroke="#334155"/><text x="840" y="416.5" fill="#334155">LAN</text></g>
+<g class="bdg"><circle cx="866" cy="98" r="15"/><text x="866" y="103.5">1</text></g>
+<g class="bdg"><circle cx="252" cy="30" r="15"/><text x="252" y="35.5">2</text></g>
+<g class="bdg"><circle cx="366" cy="190" r="15"/><text x="366" y="195.5">3</text></g>
+<g class="bdg"><circle cx="270" cy="318" r="15"/><text x="270" y="323.5">4</text></g>
+<g class="bdg"><circle cx="418" cy="548" r="15"/><text x="418" y="553.5">5</text></g>
+<g class="bdg"><circle cx="978" cy="418" r="15"/><text x="978" y="423.5">6</text></g>
+<text x="710" y="82" class="cap" text-anchor="middle">Edge AI 게이트웨이</text>
+</svg>
+<figcaption>설치 구성 예시 도식 · 게이트웨이는 렌더 이미지</figcaption></figure>
+      <ol class="steps rv">
+        <li><div><b>게이트웨이</b><span>냉동고 옆면 또는 벽에 고정 (VESA 75 / M4 나사)</span></div></li>
+        <li style="--c:#d4972a"><div><b>경광등</b><span>DO 릴레이 출력</span></div></li>
+        <li style="--c:#14a38b"><div><b>도어 접점</b><span>DI 입력, 열림 횟수와 시간</span></div></li>
+        <li style="--c:#5b7cfa"><div><b>고내 온도 센서</b><span>4-20mA 입력</span></div></li>
+        <li style="--c:#e0574f"><div><b>CT 클램프</b><span>압축기 전류, 전선 피복 그대로 집기만 하면 됨</span></div></li>
+        <li style="--c:#334155"><div><b>LAN</b><span>웹 화면 · REST API(JSON) · 서버 연동</span></div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- 4. 차별점 -->
+<section class="dark2">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">Why Edge AI Gateway</span>
+      <h2>4가지 차별점</h2>
+    </div>
+    <div class="cards4">
+      <div class="card rv"><div class="no">01</div><h3>온도 경보보다 먼저</h3><p>온도가 무너지기 전, 전류와 냉동 사이클의 변화로 먼저 봅니다.</p></div>
+      <div class="card rv"><div class="no">02</div><h3>현장에서 스스로 판단</h3><p>네트워크가 끊겨도 학습 · 판단 · 경보가 멈추지 않습니다.</p></div>
+      <div class="card rv"><div class="no">03</div><h3>정전에도 학습 유지</h3><p>1년 학습 결과를 Flash에 이중 저장, 펌웨어 업데이트 후에도 유지됩니다.</p></div>
+      <div class="card rv"><div class="no">04</div><h3>MCU 하나로</h3><p>고가 GPU · AI 모듈 없이 STM32 MCU로 동작합니다. AI 엔진 RAM 3.6KB.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. AI 설명 -->
+<section id="ai">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">How it works</span>
+      <h2>MCU 하나로 동작하는 자체 개발 AI 엔진</h2>
+      <p class="lead">고장 사례를 수천 건 모아 학습시키는 딥러닝 방식이 아닙니다. 냉동 원리를 아는 <b>물리 모델</b>, 냉동고마다 정상을 배우는 <b>학습 모델</b>, 원인과 시기를 짚는 <b>판단 모델</b>. 세 모델이 차례로 판단하는 <b>3중 판단 엔진</b>입니다.</p>
+    </div>
+
+    <div class="engine rv">
+      <div class="eng-io"><span class="io-k">입력</span><span class="chip">압축기 전류 (CT)</span><span class="chip">고내 온도</span><span class="chip">외기 온도</span><span class="chip">도어 열림</span></div>
+      <div class="models">
+        <div class="model">
+          <div class="mk"><span>01</span>물리 모델</div>
+          <h3>냉동 사이클을 읽는다</h3>
+          <p>냉동 사이클이 한 번 돌 때마다 설비 상태를 나타내는 6가지 지표를 계산합니다.</p>
+          <div class="chips"><span class="chip">열 침투율</span><span class="chip">냉각 능력</span><span class="chip">운전 전류</span><span class="chip">기동 피크</span><span class="chip">사이클 길이</span><span class="chip">정지 온도</span></div>
+        </div>
+        <div class="arrow" aria-hidden="true"></div>
+        <div class="model">
+          <div class="mk"><span>02</span>학습 모델</div>
+          <h3>냉동고마다 '정상'을 배운다</h3>
+          <p>같은 기종이라도 냉동고마다 정상은 다릅니다. 외기 온도에 따른 정상 범위를 30일 단위로 쌓아 사계절(1년) 기준을 완성합니다. 고장이 의심되는 달은 학습에서 제외합니다.</p>
+        </div>
+        <div class="arrow" aria-hidden="true"></div>
+        <div class="model">
+          <div class="mk"><span>03</span>판단 모델</div>
+          <h3>무엇이, 언제 문제인지 짚는다</h3>
+          <p>정상에서 얼마나, 어느 방향으로 벗어났는지로 이상 정도와 원인을 추정하고, 7일 추세로 점검이 필요한 시점을 예상합니다.</p>
+        </div>
+      </div>
+      <div class="eng-io out"><span class="io-k">결과</span><span class="chip">이상 점수</span><span class="chip">추정 원인 6종</span><span class="chip">확신도 %</span><span class="chip">점검 권장 시점</span></div>
+    </div>
+
+    <div class="guard">
+      <div class="rv"><b>오판 방지 ① 규칙 검사</b>압축기 정지 · 기동 실패 · 가동률 85% 초과처럼 즉시 알려야 할 상황은 AI 판단과 별도로 바로 경보합니다.</div>
+      <div class="rv"><b>오판 방지 ② 센서 자기 진단</b>단선 · 값 고정 · 튐 · CT 빠짐을 구분해, 센서 고장을 설비 고장으로 잘못 경보하지 않습니다.</div>
+    </div>
+
+    <h3 class="cmp-title rv">일반 AI와 무엇이 다른가</h3>
+    <table class="tbl vs rv">
+      <thead><tr><th>구분</th><th>일반 AI (딥러닝)</th><th class="us">BKIC 3중 판단 엔진</th></tr></thead>
+      <tbody>
+        <tr><td>학습 데이터</td><td data-l="일반 AI">고장 사례를 수천 건 미리 모아야 학습 가능</td><td data-l="BKIC 3중 판단 엔진" class="hi"><b>고장 데이터 없이 시작</b><span>설치한 냉동고의 정상 상태만으로 스스로 학습</span></td></tr>
+        <tr><td>필요 장비</td><td data-l="일반 AI">GPU · AI 가속 모듈 또는 클라우드 서버</td><td data-l="BKIC 3중 판단 엔진" class="hi"><b>게이트웨이 MCU 하나</b><span>학습부터 판단까지 장비 안에서 처리, 별도 AI 서버 불필요</span></td></tr>
+        <tr><td>판단 근거</td><td data-l="일반 AI">결과만 나오고 이유를 알기 어려움 (블랙박스)</td><td data-l="BKIC 3중 판단 엔진" class="hi"><b>근거를 보여 주는 AI</b><span>어떤 지표가 어느 방향으로 벗어났는지, 원인과 확신도 %로 제시</span></td></tr>
+        <tr><td>현장 적응</td><td data-l="일반 AI">서버에서 한 번 학습 후 배포, 현장마다 다른 조건 반영이 어려움</td><td data-l="BKIC 3중 판단 엔진" class="hi"><b>냉동고마다 맞춤 학습</b><span>설치 위치 · 기종 · 계절 차이까지 1년에 걸쳐 반영</span></td></tr>
+        <tr><td>네트워크 · 정전</td><td data-l="일반 AI">네트워크가 끊기면 판단이 멈추는 경우가 많음</td><td data-l="BKIC 3중 판단 엔진" class="hi"><b>끊겨도 멈추지 않음</b><span>학습 · 판단 · 경보 계속, 학습 결과는 Flash 이중 저장으로 정전 후에도 유지</span></td></tr>
+        <tr><td>적용 범위</td><td data-l="일반 AI">범용</td><td data-l="BKIC 3중 판단 엔진" class="hi"><b>냉동 · 냉장 설비 특화</b><span>다른 설비는 물리 모델의 지표를 새로 설계해 확장</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 6. 성능 -->
+<section id="performance" class="dark">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">Performance</span>
+      <h2>성능 <span class="tag" style="font-size:15px">시뮬레이션</span></h2>
+      <p class="lead">시험 조건: 가상 현장 10곳 · 냉동고 200대 · 2년. 게이트웨이 펌웨어와 같은 C 코드로 실행했습니다.</p>
+    </div>
+    <table class="tbl rv">
+      <thead><tr><th>항목</th><th>결과</th><th>조건</th></tr></thead>
+      <tbody>
+        <tr><td>고장 감지</td><td data-l="결과"><b>100%</b></td><td data-l="조건">고장 40대 전부 (느린 고장 30 · 갑작스런 고장 10)</td></tr>
+        <tr><td>원인 1순위 적중</td><td data-l="결과"><b>97.5%</b></td><td data-l="조건">콘덴서 · 냉매 · 패킹 · 팬 · 기동 · 숏사이클</td></tr>
+        <tr><td>정상 냉동고 오경보</td><td data-l="결과"><b>0건</b></td><td data-l="조건">2년, 사계절 · 폭염 · 정전 포함</td></tr>
+        <tr><td>센서 고장 → 설비 고장 오판</td><td data-l="결과"><b>0%</b></td><td data-l="조건">단선 · 고정 · 튐 · CT 빠짐 · 드리프트 20대</td></tr>
+        <tr><td>점검 권장 예고</td><td data-l="결과"><b>약 10일 전</b></td><td data-l="조건">예상 오차 중앙값 20%</td></tr>
+        <tr><td>처리 부담</td><td data-l="결과"><b>1분에 수십 µs</b></td><td data-l="조건">코드 8.3KB · RAM 3.6KB</td></tr>
+        <tr><td>Isolation Forest와 비교</td><td data-l="결과"><b>100% vs 68%</b></td><td data-l="조건">같은 데이터, 오경보 0 기준 감지율 (IF 1년 학습)</td></tr>
+        <tr><td>온도 기준 경보와 비교</td><td data-l="결과">느린 고장 <b>40%</b>만 감지, 2~3주 늦음</td><td data-l="조건">같은 데이터</td></tr>
+      </tbody>
+    </table>
+    <div class="limit rv"><b>솔직한 한계</b> — 설치 전부터 이미 나빠진 냉동고는 혼자서는 그 상태를 "정상"으로 배웁니다. 이 경우 여러 대를 비교하는 서버 쪽 분석으로 찾습니다. 감도는 현장 실측 데이터로 최종 조정합니다.</div>
+  </div>
+</section>
+
+<!-- 7. 적용 분야 -->
+<section class="white">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">Applications</span>
+      <h2>적용 분야</h2>
+    </div>
+    <div class="cards4">
+      <div class="lcard rv"><h3>제약 · 백신 콜드체인</h3><p>온도 이탈 = 폐기. 이탈 전에 설비 이상을 먼저 찾습니다.</p></div>
+      <div class="lcard rv"><h3>병원 · 연구소 시료 보관</h3><p>대체 불가 시료를 24시간 무인 감시합니다.</p></div>
+      <div class="lcard rv"><h3>식품 냉동 창고 · 매장</h3><p>여러 대를 같은 기준으로 비교해 점검 순서를 정합니다.</p></div>
+      <div class="lcard rv"><h3>제조 소재 냉동 보관</h3><p>접착제 · 수지 등 유효기간이 온도에 걸린 자재 (항공·방산 부품 공장).</p></div>
+    </div>
+    <p class="note rv">확장 가능성 (지표 재설계 시): 냉장 쇼케이스, 칠러, 공조기, 컴프레서 설비</p>
+  </div>
+</section>
+
+<!-- 8. 제원 -->
+<section id="spec">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">Specification</span>
+      <h2>제원 <span class="tag" style="font-size:15px">v1.1</span></h2>
+    </div>
+    <div class="spec-grid">
+      <div class="rv">
+        <table class="tbl">
+          <tbody>
+            <tr><td>전원</td><td>24VDC (동작 약 16~30V) · 역접속 · 서지(TVS) · 과전류(PTC) 보호</td></tr>
+            <tr><td>전원부</td><td>24V → 5V 벅 → 3.3V 벅 (TPS563201), 저발열</td></tr>
+            <tr><td>MCU</td><td>STM32H743VIT6 · Arm Cortex-M7 480MHz · Flash 2MB · RAM 1MB</td></tr>
+            <tr><td>아날로그 입력</td><td>4-20mA × 3 (루프 전원 공급, 0.1% 정밀 션트, 64회 평균) · CT × 2 (SCT-013-000, 최대 100A)</td></tr>
+            <tr><td>디지털 입력</td><td>DI × 6 · 포토커플러 절연 · 무전압 접점 (도어, 경보 접점 등)</td></tr>
+            <tr><td>디지털 출력</td><td>DO × 2 릴레이 (NO, 최대 30VDC) · 경광등 · 외부 경보</td></tr>
+            <tr><td>표시 · 조작</td><td>2.8" 240×320 컬러 LCD · 상태 표시 RUN · NET · ALM · NEXT / ACK 버튼 · 부저</td></tr>
+            <tr><td>통신</td><td><b>Ethernet 10/100 온보드</b> (LAN8742A 산업용 PHY, ESD 보호) · 웹 화면 · REST API (JSON) · RS-485 (Modbus RTU) · I2C × 2 · 확장 UART</td></tr>
+            <tr><td>보안</td><td>수신처 연동 시 암호화 전송 (적용 예정)</td></tr>
+            <tr><td>시각 · 기록</td><td>RTC (전지 백업) + SNTP · 1분 기록 약 9개월 · 이벤트 기록</td></tr>
+            <tr><td>신뢰성</td><td>정전 자동 복구 · 워치독 · 센서 자기 진단 (단선 · 고정 · 튐 · CT 빠짐)</td></tr>
+            <tr><td>PCB</td><td><b>4층 기판</b> (전용 GND 층, 이더넷 차동 임피던스 약 98Ω)</td></tr>
+            <tr><td>단자</td><td>3.81mm 착탈식 단자 7개 (아래쪽 일렬), CT 잭 2, RJ45</td></tr>
+            <tr><td>케이스</td><td>VISOR 디자인, 132 × 121.5 × 53.4mm, SLA 레진 본체 + 금속 인서트</td></tr>
+            <tr><td>앞판</td><td>FR4 PCB 앞판 (검정 무광 + 흰 실크 + 금색 ENIG 포인트), 단자·핀 이름 표기</td></tr>
+            <tr><td>설치</td><td>뒷면 VESA 75 (M4) · 벽 / 냉동고 옆면 / 브래킷</td></tr>
+          </tbody>
+        </table>
+        <p class="note">초기 모델(H743_Carrier v1.1) 기준입니다. 향후 외장 케이스 디자인은 변경될 수 있으며, 기능과 입출력 사양은 동일하게 유지됩니다. MCU 사양은 ST STM32H743 데이터시트 기준.</p>
+      </div>
+      <aside class="mcu rv">
+        <span class="eyebrow">MCU</span>
+        <h3>STM32H743 — 고성능 MCU 하나로</h3>
+        <p>AI 엔진 · 웹 서버 · 화면 · 통신을 MCU 하나가 동시에 처리합니다.</p>
+        <ul>
+          <li>480MHz Cortex-M7 + 배정밀도 FPU · 1027 DMIPS</li>
+          <li>AI 엔진 자원: Flash 8.3KB / 2MB, RAM 3.6KB / 1MB</li>
+          <li>동작 온도 −40 ~ 85°C (산업용 등급)</li>
+        </ul>
+        <div class="big"><b>0.4% 미만</b><span>AI 엔진이 차지하는 MCU 자원</span></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- 9. 디자인 -->
+<section id="design" class="dark">
+  <div class="wrap">
+    <div class="des-grid">
+      <div class="rv">
+        <span class="eyebrow">Design · VISOR 케이스</span>
+        <h2>모니터링만 하는 시대는 지났습니다</h2>
+        <p class="lead">이제 장비가 스스로 판단하는 시대입니다. 그 변화를 외관에도 담았습니다. 계단형 바이저 창과 큰 챔퍼로 단정하게, 현장 어디서든 상태가 한눈에 들어오도록 설계했습니다.</p>
+        <ul class="des-list">
+          <li><b>PCB 앞판</b> — 플라스틱 대신 FR4 PCB를 앞판으로. 검정 무광 위에 흰 글씨, 로고·창 테두리는 금(ENIG)</li>
+          <li><b>단자 이름 인쇄</b> — 앞판에 단자·핀 이름이 그대로 적혀 있어 설명서 없이 배선</li>
+          <li><b>버튼</b> — 12mm 금속 버튼 2개 (NEXT · ACK)</li>
+          <li><b>본체 · 설치</b> — SLA 레진 + 황동 인서트, 뒷면 VESA 75 규격으로 벽·냉동고 옆면·시중 브래킷 고정</li>
+        </ul>
+      </div>
+      <figure class="render inst rv">
+        <img src="img/installed.jpg" alt="스테인리스 패널에 설치된 Edge AI 게이트웨이 합성 이미지" width="1200" height="765" loading="lazy">
+        <figcaption>설치 예시 합성 이미지 (렌더 기반, 실물과 다를 수 있음)</figcaption>
+      </figure>
+    </div>
+    <div class="gallery">
+      <figure class="rv"><img src="img/hero.jpg" alt="전체 렌더" loading="lazy"><figcaption>전체</figcaption></figure>
+      <figure class="rv"><img src="img/left.jpg" alt="측면 렌더" loading="lazy"><figcaption>측면</figcaption></figure>
+      <figure class="rv"><img src="img/back.jpg" alt="뒷면 VESA 75 렌더" loading="lazy"><figcaption>뒷면 · VESA 75</figcaption></figure>
+      <figure class="rv"><img src="img/bottom.jpg" alt="아래쪽 단자 렌더" loading="lazy"><figcaption>아래쪽 단자</figcaption></figure>
+      <figure class="rv"><img src="img/detail.jpg" alt="앞판 디테일 렌더" loading="lazy"><figcaption>앞판 디테일</figcaption></figure>
+    </div>
+    <p class="note">모든 케이스 이미지는 렌더이며 실물과 다를 수 있습니다. 실물 사진은 2026년 11월 하순 이후 교체 예정.</p>
+  </div>
+</section>
+
+<!-- 10. 개발 현황 -->
+<section id="roadmap" class="white">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">Roadmap</span>
+      <h2>개발 현황</h2>
+      <div class="rm-sum"><span class="ok">개발 검증 완료</span><i aria-hidden="true"></i><span class="go">현장 테스트 진행</span></div>
+      <p class="lead">펌웨어와 제품 기능 검증을 마치고, 2026년 12월 현장 시범 설치로 실측 단계에 들어갑니다.</p>
+    </div>
+    <ol class="hz rv">
+      <li class="done"><div class="when">2026-10</div><h3>펌웨어 검증</h3><span class="st d">완료</span><p>FreeRTOS · LwIP 웹서버 · AI 엔진 · 데이터 기록</p></li>
+      <li class="done"><div class="when">2026-11</div><h3>제품 기능 구현</h3><span class="st d">완료</span><p>4-20mA · CT · DI · 릴레이 · RS-485 · 이더넷 · 화면. <span class="nw">4-20mA</span> 실측 잡음 ±0.01mA</p></li>
+      <li class="done"><div class="when">2026-11</div><h3>현장용 케이스 조립</h3><span class="st d">완료</span><p>VISOR 케이스 · PCB 앞판 · VESA 75 설치 구조</p></li>
+      <li class="now"><div class="when">2026-12</div><h3>양산 초기 · 현장 시범 설치</h3><span class="st n">진행</span><p>냉동고 현장 설치, 실측 데이터로 AI 감도 조정 · 성능 수치 갱신</p></li>
+      <li><div class="when">이후</div><h3>확장</h3><span class="st p">계획</span><p>여러 대 비교 서버 · 칩 온보드형 보드 · 다른 설비로 확장</p></li>
+    </ol>
+    <div class="callout rv">시뮬레이션에서 실측으로 — <span>12월 현장 시범 설치를 함께할 파트너를 찾습니다.</span></div>
+  </div>
+</section>
+
+<!-- 11. 회사 · 기존 장비 · 실적 -->
+<section id="company">
+  <div class="wrap">
+    <div class="head rv">
+      <span class="eyebrow">Company</span>
+      <h2>현장을 매일 모니터링하는 팀이 만든 Edge AI</h2>
+      <p class="lead">BKIC는 산업 현장의 데이터를 연결하는 지능형 게이트웨이 기업입니다. 지금도 현장에서 매일 돌아가는 모니터링 장비를 만들고 운영해 온 경험으로 Edge AI 게이트웨이를 만들었습니다.</p>
+    </div>
+    <div class="co-grid">
+      <div class="lcard co-card rv">
+        <div class="co-logo">BKIC<span>.</span></div>
+        <h3>(주)비케이아이씨</h3>
+        <p class="co-tag">산업 데이터를 연결하는 지능형 게이트웨이 플랫폼</p>
+        <div class="co-blk"><b>서비스</b><div class="chips"><span class="chip">데이터 수집</span><span class="chip">실시간 모니터링</span><span class="chip">장비 · 센서 연동</span><span class="chip">기업시스템 연계</span><span class="chip">안전 · 운영 · 설비 개선</span></div></div>
+        <div class="co-blk"><b>적용 분야</b><div class="chips"><span class="chip">제조</span><span class="chip">안전</span><span class="chip">에너지</span><span class="chip">유지보수</span><span class="chip">품질관리</span><span class="chip">산업 디지털 전환</span></div></div>
+      </div>
+      <div class="lcard sgw rv">
+        <div class="sgw-img"><img src="img/bk-sgw.jpg" alt="BK-SGW 스마트 게이트웨이" width="700" height="600" loading="lazy"></div>
+        <div>
+          <div class="sgw-k">기존 모니터링 장비</div>
+          <h3>스마트 게이트웨이 BK-SGW</h3>
+          <span class="kc"><b>KC</b>인증 · 방송통신기자재 적합등록</span>
+          <ul>
+            <li>라즈베리파이 CM4 기반 산업용 게이트웨이</li>
+            <li>듀얼 이더넷, 현장 센서 · 장비 데이터 수집</li>
+            <li>Modbus 연동, InfluxDB · 대시보드 연계</li>
+            <li>KAI 현장 미세먼지 · 온습도 · 차압 모니터링 운영 중</li>
           </ul>
         </div>
       </div>
-    </nav>
-  </header>
+    </div>
 
-  <!-- 본문 내용 (이미지) -->
-  <main>
-    <img src="img/home.png" alt="BKIC Home Page" class="page-image">
-  </main>
+    <div class="refs rv">
+      <div class="refs-h">
+        <span class="eyebrow">Track record</span>
+        <h3>현장 실적 <small>2026 · 지금도 매일 돌아가는 현장</small></h3>
+      </div>
+      <div class="refs-grid">
+        <article class="ref">
+          <div class="ref-k">설비 가동률 모니터링</div>
+          <h4>포렉스 · 창원 / 정촌 협력사</h4>
+          <div class="ref-nums">
+            <div><b>44<small>대</small></b><span>모니터링 설비</span></div>
+            <div><b>68<small>점</small></b><span>릴레이 신호</span></div>
+            <div><b>AES</b><span>암호화 실시간 전송</span></div>
+          </div>
+          <div class="ref-flow"><span>게이트웨이</span><i></i><span>수집 PC</span><i></i><span>서버 · InfluxDB · Grafana</span><i></i><span class="hl">KAI 시스템</span></div>
+          <p>설비별 가동 상태를 실시간으로 모아 KAI 시스템에 암호화 전송하고, 월간 가동률 리포트를 제공합니다.</p>
+        </article>
+        <article class="ref">
+          <div class="ref-k">환경 · 공조 모니터링</div>
+          <h4>KAI · 미세먼지 / 온습도 / 차압</h4>
+          <div class="ref-nums">
+            <div><b>3<small>종</small></b><span>미세먼지 · 온습도 · 차압</span></div>
+            <div><b>BK-SGW</b><span>스마트 게이트웨이</span></div>
+            <div><b>상시</b><span>데이터 수집 · 기록</span></div>
+          </div>
+          <div class="ref-flow"><span>센서</span><i></i><span>BK-SGW</span><i></i><span>Modbus TCP</span><i></i><span class="hl">InfluxDB 연동</span></div>
+          <p>항공 부품 생산 현장의 환경 데이터를 산업용 게이트웨이로 상시 수집해 관리 시스템과 연동합니다.</p>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <!-- 푸터 -->
-  <footer class="site-footer">
-    <p>© BKIC. All rights reserved.</p>
-  </footer>
+<!-- 12. 문의 -->
+<section id="contact" class="contact dark">
+  <div class="wrap">
+    <div class="ct-grid">
+      <div class="rv">
+        <span class="eyebrow">Contact</span>
+        <h2>시범 설치 · 공동 개발 문의</h2>
+        <p class="lead">2026년 12월부터 진행하는 현장 시범 설치를 함께할 곳을 찾습니다.</p>
+        <ul class="who">
+          <li>냉동 · 냉장 설비를 여러 대 운영하는 현장</li>
+          <li>콜드체인 업체</li>
+          <li>설비 유지보수 업체</li>
+          <li>공동 과제 파트너</li>
+        </ul>
+      </div>
+      <div class="ct-box rv">
+        <h3>문의하실 때 알려 주세요</h3>
+        <div class="ct-items"><span>회사명</span><span>담당자</span><span>연락처</span><span>냉동고 대수</span><span>현장 위치</span><span>문의 내용</span></div>
+        <div class="ct-line"><span>이메일</span><b><a href="mailto:jcgu99@gmail.com">jcgu99@gmail.com</a></b></div>
+        <div class="ct-line"><span>전화</span><b><a href="tel:01062567426">010-6256-7426</a></b></div>
+        <div class="ct-line"><span>웹사이트</span><b><a href="https://bkic.kr" target="_blank" rel="noopener">bkic.kr</a></b></div>
+        <div class="btns"><a class="btn btn-gold" href="mailto:jcgu99@gmail.com?subject=%5B%EC%8B%9C%EB%B2%94%20%EC%84%A4%EC%B9%98%20%EB%AC%B8%EC%9D%98%5D%20Edge%20AI%20%EA%B2%8C%EC%9D%B4%ED%8A%B8%EC%9B%A8%EC%9D%B4">이메일로 문의하기</a></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <!-- 부트스트랩 JS 파일 추가 -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>(주)비케이아이씨 · 부산광역시 해운대구 좌동 순환로 8번길 59(중동) · 010-6256-7426<br>© 2026 BKIC. All rights reserved.</span>
+  </div>
+</footer>
+
+<div class="lb" aria-hidden="true"><img alt=""></div>
+
+<script>
+(function(){
+  var b=document.querySelector('.burger'),m=document.querySelector('.menu');
+  b.addEventListener('click',function(){var o=m.classList.toggle('open');b.setAttribute('aria-expanded',o);});
+  m.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){m.classList.remove('open');b.setAttribute('aria-expanded',false);});});
+  var els=document.querySelectorAll('.rv');
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
+    els.forEach(function(e){io.observe(e);});
+  } else els.forEach(function(e){e.classList.add('in');});
+  var lb=document.querySelector('.lb'),li=lb.querySelector('img');
+  document.querySelectorAll('.gallery img').forEach(function(i){i.addEventListener('click',function(){li.src=i.src;li.alt=i.alt;lb.classList.add('on');});});
+  lb.addEventListener('click',function(){lb.classList.remove('on');});
+})();
+</script>
 </body>
 </html>
-
-
